@@ -1,8 +1,9 @@
-import os
 from datetime import datetime, timedelta
 from pendulum import timezone
 from airflow.decorators import task, dag
 from airflow.timetables.trigger import MultipleCronTriggerTimetable
+
+from scripts.g4_scripts import download_json_data, download_txt_data
 
 default_args = {
     'owner': 'g4_BIEPC_parcial',
@@ -22,12 +23,12 @@ default_args = {
 def g04_parcial_project():
 
     @task
-    def download_json_data():
-        print("Downloading JSON data...")
+    def task_download_json_data():
+        return download_json_data()
 
     @task
-    def download_txt_data():
-        print("Downloading TXT data...")
+    def task_download_txt_data():
+        return download_txt_data()
 
     @task
     def clean_standarization(data_json, data_txt):
@@ -41,8 +42,8 @@ def g04_parcial_project():
     def integration_upload(data):
         print("Uploading integrated data...")
 
-    data_json = download_json_data()
-    data_txt = download_txt_data()
+    data_json = task_download_json_data()
+    data_txt = task_download_txt_data()
     data = clean_standarization(data_json, data_txt)
     data = quality_validation(data)
     integration_upload(data)
