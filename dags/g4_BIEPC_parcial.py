@@ -4,7 +4,7 @@ from pendulum import timezone
 from airflow.decorators import task, dag
 from airflow.timetables.trigger import MultipleCronTriggerTimetable
 
-from scripts.g4_scripts import download_json_data, download_txt_data
+from scripts.g4_scripts import download_json_data, download_txt_data, merge_sources_to_csv
 
 AZURE_PATH = "raw/G4"
 CONTAINER_NAME = "airflow"
@@ -36,10 +36,12 @@ def g04_parcial_project():
         return download_txt_data()
 
     @task
-    def upload_azure_datalake(path_file_json, path_file_txt):
-        print("Uploading integrated data...")
+    def task_merge_sources_to_csv(path_file_json, path_file_txt):
+        return merge_sources_to_csv(path_file_json, path_file_txt)
 
-        for file_path in [path_file_json, path_file_txt]:
+    @task
+    def upload_azure_datalake(path_file_json, path_file_txt, data_unificada_csv):
+        for file_path in [path_file_json, path_file_txt, data_unificada_csv]:
             upload_to_azure(
                 local_file_path=file_path,
                 container_name=CONTAINER_NAME,
@@ -49,5 +51,6 @@ def g04_parcial_project():
 
     data_json = task_download_json_data()
     data_txt = task_download_txt_data()
-    upload_azure_datalake(data_json, data_txt)
+    data_unificada_csv = task_merge_sources_to_csv(data_json, data_txt)
+    upload_azure_datalake(data_json, data_txt, data_unificada_csv)
 dag = g04_parcial_project()
