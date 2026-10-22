@@ -120,11 +120,11 @@ def merge_sources_to_csv(path_file_json: str, path_file_txt: str) -> str:
     df_arena = pd.read_csv(path_file_txt, sep="|", dtype=str)
 
     pozos_numeric_cols = [
-        "voltaje",
-        "amperaje",
-        "frecuencia_bomba",
+        "voltaje_v",
+        "amperaje_a",
+        "frecuencia_bomba_hz",
         "temperatura_fahrenheit",
-        "vibracion",
+        "vibracion_mm_s_rms",
     ]
     for col in pozos_numeric_cols:
         df_pozos[col] = pd.to_numeric(df_pozos[col], errors="coerce")
