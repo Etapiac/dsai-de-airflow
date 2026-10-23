@@ -76,6 +76,45 @@ Get Account Keys: https://learn.microsoft.com/en-us/azure/storage/common/storage
 1. Change in yaml:
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
 
+# DAG g4_BIEPC_parcial (G4 - Proyecto Parcial)
+
+Este DAG corresponde al avance del proyecto parcial del grupo 4. Se ejecuta cada 15 minutos en UTC con la expresión cron `*/15 * * * *` y tiene `catchup=False`.
+
+## Flujo de trabajo
+1. `task_download_json_data`: descarga `datos_pozos.json` desde la API FastAPI (`GET /datos-pozos`) usando autenticación `X-API-Key`.
+2. `task_download_txt_data`: descarga `datos_arena.txt` desde el bucket S3 `pozos-arena`.
+3. `task_merge_sources_to_csv`: une ambas fuentes por `id_pozo` y `fecha_hora`, convierte los valores numéricos y genera `datos_unificados.csv` en `/opt/airflow/data`.
+4. `upload_azure_datalake`: sube los tres archivos a Azure Blob Storage, contenedor `datalake`, en las rutas:
+   - `raw/G4/pozos`
+   - `raw/G4/arena`
+   - `raw/G4/pozos_arena`
+
+Los blobs se nombran como `uploaded_<nombre_archivo>_<YYYYMMDD>.<extensión>` y se cargan con `overwrite=True`. Como el sufijo solo incluye la fecha, las ejecuciones del mismo día sobrescriben el mismo blob.
+
+## Configuración requerida
+- Crear el archivo `.env` a partir de `.env.sample` y reemplazar los valores de ejemplo:
+  ```bash
+  cp .env.sample .env
+  ```
+- Configurar la API FastAPI mediante `API_BASE_URL` y `API_KEY`.
+- Configurar S3 mediante `S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` y `AWS_DEFAULT_REGION`. Se puede usar el emulador local Floci o AWS real.
+- Crear en Airflow la conexión WASB `azure_blob_storage_2` y verificar que exista el contenedor `datalake`.
+- Las dependencias `requests`, `boto3` y `pandas` están declaradas en `requirements.txt`.
+
+## Archivos agregados
+- `scripts/g4_scripts.py`: descarga de las fuentes JSON y TXT, y unión en CSV.
+- `dags/services/azure_service.py`: subida de archivos a Azure Blob Storage.
+- `dags/helpers/file_helper.py`: validaciones de archivos y generación del sufijo de fecha.
+- `.env.sample`: variables de entorno necesarias para API, S3 y Airflow.
+- `requirements.txt`: dependencias de Python del DAG.
+- `docker-compose.yaml`: variables de entorno, `extra_hosts` para `host.docker.internal`, volumen de `scripts` y `PYTHONPATH`.
+
+## Ejecución y verificación
+Reconstruir y reiniciar los contenedores después de agregar dependencias o variables de entorno:
+```bash
+docker compose down && docker compose up --build -d
+```
+
 # Docker compose codes
 - docker compose up airflow-init: Initial load for airflow
 - docker compose up: To turn on airflow
