@@ -28,7 +28,7 @@ default_args = {
     description="Avance Proyecto Parcial",
     default_args=default_args,
     start_date=datetime(2025, 1, 1, tzinfo=timezone("America/Lima")),
-    schedule=MultipleCronTriggerTimetable("@daily", timezone="UTC"),
+    schedule=MultipleCronTriggerTimetable("*/15 * * * *", timezone="UTC"),
     catchup=False,
     tags=["g4", "BIEPC", "laboratory_02", "azure", "blob", "upload"],
 )
