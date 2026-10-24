@@ -12,3 +12,5 @@ __pycache__
 
 # Ignore all files inside data folder
 data/
+
+.vscode/
