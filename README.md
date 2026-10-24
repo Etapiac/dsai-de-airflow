@@ -41,13 +41,13 @@ docker exec 0c04f0e03aa8 airflow version
     - restart the volume (No need to use build here)
     docker compose down && docker compose up -d
 
-- Note, each task executes acctions (Behind the scenes, each DAG is an operator):
+- A DAG defines a workflow: its tasks and their dependencies. Each task executes a unit of work, which can be defined using an operator:
     - Python Function: pythonoperator
     - Bash Command: bashoperator
     - Inser data into a DB: postgresoperator
 (Depending in the action we want to trigger from our dag, we will use the corresponding operator)
 Operator: It is an object encapsulating the job we want to run in our dag
-(Each time we are adding an operator in our dag, we are adding a dag)
+(Instantiating an operator within a DAG creates a task, not another DAG.)
 
 Examples:
 1. Create my_dag.py inside ./dags
