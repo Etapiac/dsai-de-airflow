@@ -7,7 +7,7 @@ from airflow.timetables.trigger import MultipleCronTriggerTimetable
 
 from scripts.g4_scripts import download_json_data, download_txt_data, merge_sources_to_csv
 
-AZURE_PATH = "raw/G4"
+AZURE_PATH = "raw/airflow/G4"
 CONTAINER_NAME = "datalake"
 WASB_CONN_ID = "azure_blob_storage_2"
 
