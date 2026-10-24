@@ -10,6 +10,7 @@ LOCAL_FOLDER= "/opt/airflow/data/incoming"
 CONTAINER_NAME = "datalake" # airflow
 WASB_CONN_ID = "utec_blob_storage"
 BLOB_PREFIX= "raw/airflow/G2"
+ESPERADOS = ["agencies", "customers", "installments", "loans", "payments"]  # los 5 archivos del día
  
 default_args = {
     'owner': 'airflow',
@@ -32,8 +33,9 @@ def upload_dag():
     @task
     def call_upload():
         archivos = sorted(Path(LOCAL_FOLDER).glob("*.csv"))
-        if not archivos:
-            raise FileNotFoundError(f"No hay archivos CSV en {LOCAL_FOLDER}")
+        faltan = [e for e in ESPERADOS if not any(a.name.startswith(e + "_") for a in archivos)]
+        if faltan:
+            raise FileNotFoundError(f"Faltan archivos de {faltan} en {LOCAL_FOLDER}. No se cargó nada.")
 
         for archivo in archivos:
             blob_name = f"{BLOB_PREFIX}/{archivo.name}"
