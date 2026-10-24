@@ -10,7 +10,7 @@ El folder `servidor_central` trae los CSV de las 12 plantas. Hay que copiarlo de
 
 ```bash
 mkdir -p data
-unzip servidor_central.zip -d data
+cp servidor_central ./data
 ```
 
 ## Conexión `utec_blob_storage`
