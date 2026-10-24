@@ -82,3 +82,42 @@ Get Account Keys: https://learn.microsoft.com/en-us/azure/storage/common/storage
 - docker compose up -d: To turn on airflow and run it in background (Recommended)
 - docker compose down && docker compose up -d: Normal Restart
 - docker compose down && docker compose up --build -d: Restart forcing to build docker file (Only when dockerfile is updated)
+
+## Grupo 6 — Ingesta de Olist
+
+### Objetivo y alcance
+
+Preparar datos para medir entregas tardías, identificar regiones y vendedores asociados a retrasos y relacionar la puntualidad con la evaluación del cliente. Este avance ingiere archivos a Raw; la limpieza y los indicadores se desarrollarán posteriormente.
+
+Fuente: [Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce), histórico 2016–2018, bajo licencia [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Se conservan los CSV sin transformar.
+
+```text
+Kaggle → descarga inicial → data/olist/ → Airflow → datalake/raw/G6/olist/
+```
+
+### Preparación y ejecución
+
+1. Descargar el dataset y extraer en `data/olist/` estos archivos:
+   - `olist_orders_dataset.csv`
+   - `olist_order_items_dataset.csv`
+   - `olist_customers_dataset.csv`
+   - `olist_sellers_dataset.csv`
+   - `olist_order_reviews_dataset.csv`
+2. Iniciar Airflow siguiendo las instrucciones generales de este README. La carpeta local se monta en `/opt/airflow/data/olist/` y simula el servidor de origen.
+3. Crear la conexión `azure_blob_storage_olist`, tipo `wasb`, para la cuenta `stmcdiade`. En Extra, usar `{"connection_string": "<cadena autorizada>"}`. El contenedor `datalake` debe existir. No guardar credenciales en Git.
+4. En [Airflow local](http://localhost:8080), abrir `g6_last_olist`, despausarlo y usar **Trigger** para una ejecución manual. Revisar la tarea `upload_files` y sus logs.
+
+### Operación y errores
+
+El DAG [G6_LAST_olist.py](dags/G6_LAST_olist.py) tiene una tarea que verifica y carga los cinco archivos secuencialmente mediante [azure_upload.py](scripts/azure_upload.py).
+
+- **Frecuencia:** diaria a las 06:00, `America/Lima` (`0 6 * * *`), para apoyar la revisión operativa matutina. Requiere Docker y Airflow activos; `catchup=False` evita recuperar todas las ejecuciones históricas.
+- **Repetición:** reemplaza archivos en sus rutas fijas (`overwrite=True`), sin agregar filas. El histórico es estático: una nueva ejecución no implica datos nuevos.
+- **Fallos:** un reintento tras un minuto, desde el primer archivo. Si una carga falla, las anteriores permanecen en Azure; no hay reversión del lote.
+- **Logs:** inicio, origen, contenedor, destino y duración por transferencia; los fallos conservan la excepción técnica. El DAG lanza `FileNotFoundError` con la ruta si falta un archivo.
+
+### Validación y evolución
+
+Se probaron ejecuciones reales de éxito, reemplazo sin duplicados, archivo faltante persistente, recuperación en el reintento y contenedor inexistente. Los cinco CSV en Azure coincidieron con los originales mediante SHA-256. Autenticación, permisos, red y timeout se validaron adicionalmente con excepciones simuladas en la función, fuera de las ejecuciones del DAG.
+
+Como evolución se propone simular entregas periódicas con registros nuevos y actualizados, y separar las cargas en tareas por archivo para aislar reintentos y configurar concurrencia según los recursos disponibles.
